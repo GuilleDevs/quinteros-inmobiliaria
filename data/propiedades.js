@@ -2,10 +2,62 @@
    CATÁLOGO DE PROPIEDADES — Quinteros Grupo Inmobiliario
    ARCHIVO GENERADO AUTOMÁTICAMENTE. No editar a mano:
    cualquier cambio se pierde al guardar desde el panel.
-   Última actualización: 10/08/2026 10:38
+   Última actualización: 10/08/2026 11:09
    ============================================================ */
 
 window.PROPIEDADES = [
+    {
+        "id": "nueva-propiedad-2",
+        "titulo": "Propiedad de prueba",
+        "operacion": "venta",
+        "tipo": "casa",
+        "estado": "disponible",
+        "destacada": false,
+        "publicada": true,
+        "direccion": "Calle 108, 425",
+        "zona": "centro",
+        "dormitorios": 2,
+        "banos": 1,
+        "ambientes": 3,
+        "cocheras": 1,
+        "m2Cubiertos": 70,
+        "m2Terreno": 110,
+        "precio": 75,
+        "moneda": "USD",
+        "expensas": null,
+        "descripcion": "En excelente estado",
+        "caracteristicas": [],
+        "imagenes": [],
+        "miniaturas": [],
+        "mapaQuery": "Calle 108, 425",
+        "fecha": "2026-08-10"
+    },
+    {
+        "id": "nueva-propiedad",
+        "titulo": "Nueva propiedad",
+        "operacion": "venta",
+        "tipo": "casa",
+        "estado": "disponible",
+        "destacada": false,
+        "publicada": false,
+        "direccion": "",
+        "zona": "centro",
+        "dormitorios": null,
+        "banos": null,
+        "ambientes": null,
+        "cocheras": null,
+        "m2Cubiertos": null,
+        "m2Terreno": null,
+        "precio": null,
+        "moneda": "USD",
+        "expensas": null,
+        "descripcion": "",
+        "caracteristicas": [],
+        "imagenes": [],
+        "miniaturas": [],
+        "mapaQuery": "",
+        "fecha": "2026-08-10"
+    },
     {
         "id": "dpto-la-quadra-16-113-115",
         "titulo": "Departamento en \"La Quadra\"",

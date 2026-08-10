@@ -95,7 +95,8 @@
       if (!Number(p.fotos)) notas.push("sin fotos");
       var extra = notas.length ? " · " + notas.join(" · ") : "";
 
-      return '<button type="button" class="admin-item' + (actual && actual.id == p.id ? " is-active" : "") + '" data-id="' + p.id + '">' +
+      return '<button type="button" class="admin-item' + (actual && actual.id == p.id ? " is-active" : "") +
+        '" data-id="' + p.id + '" aria-label="Editar ' + escapar(p.titulo) + '">' +
         '<span class="admin-item__dot" style="background:' + color + '"></span>' +
         '<span class="admin-item__body">' +
         '<span class="admin-item__title">' + escapar(p.titulo) + "</span>" +
@@ -415,9 +416,25 @@
     pintarLista();
     marcarSucio(false);
 
+    /* Selección tolerante.
+       El navegador solo dispara "click" sobre el ancestro común de donde se
+       apretó y donde se soltó el botón. Si la mano se mueve unos píxeles y
+       el mouse cruza al espacio entre dos filas, ese ancestro pasa a ser la
+       lista entera y closest() no encuentra ninguna fila: el clic se pierde
+       y aparenta que la propiedad no responde.
+       Por eso recordamos sobre qué fila se apretó y la usamos de respaldo. */
+    var filaPresionada = null;
+
+    $("#lista-admin").addEventListener("pointerdown", function (ev) {
+      filaPresionada = ev.target.closest(".admin-item");
+    });
+
     $("#lista-admin").addEventListener("click", function (ev) {
-      var btn = ev.target.closest(".admin-item");
-      if (btn) seleccionar(btn.getAttribute("data-id"));
+      var btn = ev.target.closest(".admin-item") || filaPresionada;
+      filaPresionada = null;
+      if (btn && btn.getAttribute("data-id")) {
+        seleccionar(btn.getAttribute("data-id"));
+      }
     });
 
     $("#buscar-admin").addEventListener("input", pintarLista);

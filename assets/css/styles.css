@@ -1652,6 +1652,10 @@ code {
   align-items: center;
   gap: 0.65rem;
   min-width: 0;
+  /* Sin esto, arrastrar un poco el mouse al hacer clic selecciona el texto
+     de la fila en vez de activarla, y el clic se pierde. */
+  user-select: none;
+  -webkit-user-select: none;
   padding: 0.6rem 0.7rem;
   border: 1px solid var(--line);
   border-radius: var(--radius-s);
@@ -1663,6 +1667,9 @@ code {
 .admin-item:hover { border-color: var(--turq-400); background: var(--turq-100); }
 .admin-item.is-active { border-color: var(--navy-800); background: var(--navy-800); color: #fff; }
 .admin-item.is-active .admin-item__meta { color: #9FC0D6; }
+/* Los hijos no interceptan el puntero: así el destino del evento es siempre
+   el <button> de la fila, nunca un <span> de adentro. */
+.admin-item > *, .admin-item__body > * { pointer-events: none; }
 .admin-item__dot { width: 8px; height: 8px; border-radius: 2px; flex: none; }
 .admin-item__body { min-width: 0; flex: 1; }
 /* Son <span>: sin display:block el recorte con puntos suspensivos no funciona
