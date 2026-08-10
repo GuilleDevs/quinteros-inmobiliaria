@@ -30,6 +30,7 @@ $totalPublicadas = count(array_filter($propiedades, fn($p) => $p['publicada']));
     <img class="brand__mark" src="assets/img/logo-quinteros-claro.png" width="183" height="200" alt="" aria-hidden="true">
     <h1>Panel de carga de propiedades</h1>
     <span id="estado-cambios" style="font-size:.8rem;color:#9FC0D6"></span>
+    <span style="font-size:.8rem;color:#7897AE" title="Cuenta con la que entraste"><?= e(usuario_admin()) ?></span>
     <a class="btn btn--ghost-light btn--sm" href="index.html" target="_blank" rel="noopener">Ver el sitio</a>
     <button class="btn btn--ghost-light btn--sm" type="button" id="btn-clave">Contraseña</button>
     <a class="btn btn--ghost-light btn--sm" href="logout.php">Salir</a>

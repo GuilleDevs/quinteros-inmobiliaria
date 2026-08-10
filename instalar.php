@@ -11,15 +11,22 @@
 require_once __DIR__ . '/lib/db.php';
 require_once __DIR__ . '/lib/catalogo.php';
 
+/* Usuario sugerido para la cuenta de administración. Se puede cambiar en
+   el formulario; lo que se guarda es lo que quede escrito ahí. */
+const EMAIL_SUGERIDO = 'admin@inmobiliariaquinteros.com';
+
 $paso = 'formulario';
 $errores = [];
 $resumen = [];
+$email = EMAIL_SUGERIDO;
 
 /* Si ya hay contraseña definida, el instalador no se puede volver a correr:
    si no, cualquiera que llegue a esta URL podría cambiarla. */
 $yaInstalado = false;
 try {
-    $yaInstalado = tablas_creadas() && ajuste('password_hash') !== null;
+    $yaInstalado = tablas_creadas()
+        && ajuste('password_hash') !== null
+        && ajuste('admin_email') !== null;
 } catch (Throwable $e) {
     $yaInstalado = false;
 }
@@ -27,9 +34,13 @@ try {
 if ($yaInstalado) {
     $paso = 'bloqueado';
 } elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $email  = trim((string) ($_POST['email'] ?? ''));
     $clave  = (string) ($_POST['clave'] ?? '');
     $clave2 = (string) ($_POST['clave2'] ?? '');
 
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $errores[] = 'El usuario tiene que ser una dirección de email válida.';
+    }
     if (mb_strlen($clave) < 8) {
         $errores[] = 'La contraseña tiene que tener al menos 8 caracteres.';
     }
@@ -41,6 +52,7 @@ if ($yaInstalado) {
         try {
             crear_tablas();
             $resumen['importadas'] = importar_catalogo_inicial();
+            guardar_ajuste('admin_email', mb_strtolower($email));
             guardar_ajuste('password_hash', password_hash($clave, PASSWORD_DEFAULT));
             $pub = generar_catalogo();
             $resumen['catalogo'] = $pub['ok'] ? $pub : null;
@@ -205,7 +217,7 @@ function importar_catalogo_inicial(): int
       <?php if (!empty($resumen['catalogo'])): ?>
         <li>Catálogo publicado: <?= (int) $resumen['catalogo']['publicadas'] ?> propiedades visibles en el sitio.</li>
       <?php endif; ?>
-      <li>Contraseña del panel definida.</li>
+      <li>Cuenta creada: <strong><?= e($email) ?></strong></li>
     </ul>
 
     <div class="notice mt-3">
@@ -223,7 +235,7 @@ function importar_catalogo_inicial(): int
 <?php else: ?>
 
   <div class="panel">
-    <p class="panel__title">Paso 1 de 1 — elegir la contraseña</p>
+    <p class="panel__title">Paso 1 de 1 — cuenta de administración</p>
 
     <?php if ($errores): ?>
       <div class="form-status is-error" style="display:block">
@@ -234,12 +246,19 @@ function importar_catalogo_inicial(): int
     <?php endif; ?>
 
     <p class="muted" style="font-size:.92rem">
-      Esta es la contraseña con la que la inmobiliaria va a entrar a cargar propiedades.
-      Anotala en un lugar seguro: no se puede recuperar, solo cambiar desde adentro del panel.
+      Con estos datos la inmobiliaria va a entrar a cargar propiedades. Es una única cuenta,
+      compartida por la oficina. Anotalos en un lugar seguro: la contraseña no se puede
+      recuperar, solo cambiar desde adentro del panel.
     </p>
 
     <form method="post" class="mt-3">
       <div class="admin-grid">
+        <div class="field field--full">
+          <label class="field__label" for="email">Usuario (email)</label>
+          <input class="input" id="email" name="email" type="email" required
+                 autocomplete="username" autocapitalize="off" spellcheck="false"
+                 value="<?= e($email) ?>">
+        </div>
         <div class="field">
           <label class="field__label" for="clave">Contraseña</label>
           <input class="input" id="clave" name="clave" type="password" minlength="8" required autocomplete="new-password">

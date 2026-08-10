@@ -56,12 +56,29 @@ function exigir_login_api(): void
     }
 }
 
-function intentar_login(string $clave): bool
+/** Email de la cuenta de administración (null si todavía no se instaló). */
+function usuario_admin(): ?string
+{
+    return ajuste('admin_email');
+}
+
+function intentar_login(string $usuario, string $clave): bool
 {
     iniciar_sesion();
 
+    $emailGuardado = ajuste('admin_email');
     $hash = ajuste('password_hash');
-    if (!$hash || !password_verify($clave, $hash)) {
+
+    $usuarioOk = $emailGuardado !== null
+        && hash_equals(mb_strtolower($emailGuardado), mb_strtolower(trim($usuario)));
+
+    /* Verificamos la contraseña SIEMPRE, incluso si el usuario no coincide.
+       Si cortáramos antes, la respuesta sería notablemente más rápida con un
+       usuario inexistente y eso permitiría adivinar cuál es el correcto. */
+    $hashComparacion = $hash ?: '$2y$10$invalidoinvalidoinvalidoinvalidoinvalidoinvalidoinvalidoinvalid';
+    $claveOk = password_verify($clave, $hashComparacion) && $hash !== null;
+
+    if (!$usuarioOk || !$claveOk) {
         /* Pequeña demora para desalentar la prueba de claves por fuerza bruta */
         usleep(400000);
         return false;
@@ -69,6 +86,7 @@ function intentar_login(string $clave): bool
 
     session_regenerate_id(true);
     $_SESSION['autenticado'] = true;
+    $_SESSION['usuario'] = $emailGuardado;
     $_SESSION['visto'] = time();
     return true;
 }

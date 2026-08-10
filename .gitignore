@@ -24,9 +24,10 @@ $RECYCLE.BIN/
 .DS_Store
 ._*
 
-# --- Editores --------------------------------------------------------
+# --- Editores y herramientas locales ---------------------------------
 .vscode/
 .idea/
+.claude/
 *.swp
 *.sublime-workspace
 

@@ -10,7 +10,7 @@ if (esta_logueado()) {
 
 /* Si todavía no se corrió el instalador, mandamos para allá. */
 try {
-    if (!tablas_creadas() || ajuste('password_hash') === null) {
+    if (!tablas_creadas() || ajuste('password_hash') === null || ajuste('admin_email') === null) {
         header('Location: instalar.php');
         exit;
     }
@@ -36,14 +36,16 @@ if (!$bloqueado && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $enviado = $_POST['csrf'] ?? '';
     if (empty($_SESSION['csrf']) || !hash_equals($_SESSION['csrf'], (string) $enviado)) {
         $error = 'La página estuvo abierta demasiado tiempo. Recargá e intentá de nuevo.';
-    } elseif (intentar_login((string) ($_POST['clave'] ?? ''))) {
+    } elseif (intentar_login((string) ($_POST['usuario'] ?? ''), (string) ($_POST['clave'] ?? ''))) {
         unset($_SESSION['intentos'], $_SESSION['ultimo_intento']);
         header('Location: admin.php');
         exit;
     } else {
         $_SESSION['intentos'] = $intentos + 1;
         $_SESSION['ultimo_intento'] = time();
-        $error = 'Contraseña incorrecta.';
+        /* Mensaje genérico a propósito: decir cuál de los dos está mal
+           le confirmaría a un extraño que el usuario existe. */
+        $error = 'Usuario o contraseña incorrectos.';
     }
 }
 
@@ -84,8 +86,16 @@ $csrf = token_csrf();
       <input type="hidden" name="csrf" value="<?= e($csrf) ?>">
 
       <div class="field">
+        <label class="field__label" for="usuario" style="color:#8FB3CB">Usuario</label>
+        <input class="input" id="usuario" name="usuario" type="email" required autofocus
+               inputmode="email" autocapitalize="off" spellcheck="false"
+               placeholder="admin@inmobiliariaquinteros.com"
+               autocomplete="username" <?= $bloqueado ? 'disabled' : '' ?>>
+      </div>
+
+      <div class="field mt-2">
         <label class="field__label" for="clave" style="color:#8FB3CB">Contraseña</label>
-        <input class="input" id="clave" name="clave" type="password" required autofocus
+        <input class="input" id="clave" name="clave" type="password" required
                autocomplete="current-password" <?= $bloqueado ? 'disabled' : '' ?>>
       </div>
 
