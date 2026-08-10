@@ -1,0 +1,32 @@
+FOTOS DE LAS PROPIEDADES
+========================
+
+NO hace falta poner archivos acá a mano.
+
+Esta carpeta la maneja sola el panel de carga (admin.php). Cuando la
+inmobiliaria sube una foto desde su computadora, el servidor:
+
+  1. verifica que sea realmente una imagen,
+  2. la endereza si venía rotada (fotos de celular),
+  3. genera dos versiones y las guarda acá:
+       nombre-m.jpg  →  1600 px, para la ficha y la galería
+       nombre-s.jpg  →   640 px, para las tarjetas del catálogo
+  4. anota la referencia en la base de datos.
+
+Por eso las fotos originales de 5 MB del celular terminan pesando
+unos 200 KB, sin que nadie tenga que prepararlas.
+
+--------------------------------------------------------------------
+
+IMPORTANTE
+
+- No borres archivos de acá a mano: la base seguiría apuntando a fotos
+  que ya no existen y quedarían imágenes rotas en el sitio. Para sacar
+  una foto, usá el botón de eliminar dentro del panel.
+
+- Esta carpeta necesita permisos de escritura (755). Si al subir una
+  foto aparece un error de permisos, se cambia desde el administrador
+  de archivos de Hostinger: clic derecho sobre la carpeta → Permisos.
+
+- El archivo .htaccess que está acá impide que el servidor ejecute
+  cualquier cosa que no sea una imagen. No lo borres.

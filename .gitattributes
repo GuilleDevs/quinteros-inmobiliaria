@@ -1,0 +1,20 @@
+# El sitio se despliega en un servidor Linux: dentro del repositorio los
+# archivos de texto viajan siempre con saltos de línea LF, sin importar
+# desde qué sistema se editen.
+* text=auto eol=lf
+
+# Binarios: que Git no intente convertir nada.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.woff binary
+*.woff2 binary
+
+# Que GitHub identifique bien el lenguaje del proyecto en las estadísticas.
+*.php linguist-language=PHP
+*.js linguist-language=JavaScript
+data/propiedades.js linguist-generated=true

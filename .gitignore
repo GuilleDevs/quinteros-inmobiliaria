@@ -1,0 +1,38 @@
+# ============================================================
+#  NO SUBIR AL REPOSITORIO
+# ============================================================
+
+# --- Credenciales de la base de datos --------------------------------
+# Este archivo lleva usuario y contraseña de MySQL. Nunca va al repo.
+# La plantilla versionada es lib/config.example.php
+lib/config.php
+
+# --- Fotos subidas desde el panel ------------------------------------
+# Las carga la inmobiliaria en producción: no son código y pesan.
+assets/img/propiedades/*
+!assets/img/propiedades/.htaccess
+!assets/img/propiedades/LEEME.txt
+
+# --- Archivos temporales del generador -------------------------------
+data/propiedades.js.tmp
+
+# --- Sistema operativo -----------------------------------------------
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+.DS_Store
+._*
+
+# --- Editores --------------------------------------------------------
+.vscode/
+.idea/
+*.swp
+*.sublime-workspace
+
+# --- Varios ----------------------------------------------------------
+*.log
+*.bak
+*.tmp
+_mock-*.html
+_prueba-*.html

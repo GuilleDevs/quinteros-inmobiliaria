@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+Disallow: /admin.php
+Disallow: /login.php
+Disallow: /logout.php
+Disallow: /instalar.php
+Disallow: /api/
+Disallow: /lib/
+
+Sitemap: https://www.quinterosinmobiliaria.com.ar/sitemap.xml
