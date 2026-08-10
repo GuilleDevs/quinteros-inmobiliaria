@@ -257,15 +257,55 @@ Lo que falta hacer del lado del cliente, que es lo que más mueve la aguja en SE
 
 ---
 
+## Desarrollo local
+
+Para trabajar en la máquina propia, con el panel funcionando, hace falta PHP y MySQL.
+La forma más simple en Windows es **XAMPP** (https://www.apachefriends.org), que trae los dos.
+
+Una sola vez:
+
+1. Instalar XAMPP.
+2. Habilitar la extensión **GD** (procesa las fotos): en `C:\xampp\php\php.ini` buscar
+   `;extension=gd` y sacarle el punto y coma del principio.
+3. Crear la base: abrir `C:\xampp\mysql\bin\mysql.exe -u root` y ejecutar
+   `CREATE DATABASE quinteros CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;`
+4. Copiar `lib/config.example.php` a `lib/config.php` y poner los datos locales:
+   ```php
+   const DB_NOMBRE  = 'quinteros';
+   const DB_USUARIO = 'root';
+   const DB_CLAVE   = '';        // XAMPP viene sin contraseña
+   ```
+
+Después, cada vez: **doble clic en `iniciar-local.bat`**. Levanta MySQL y el servidor PHP,
+y abre el navegador en el panel.
+
+- Sitio: `http://localhost:8080/`
+- Panel: `http://localhost:8080/admin.php`
+- Instalador: `http://localhost:8080/instalar.php` (la primera vez)
+
+> El servidor PHP integrado ignora los `.htaccess`. En local no importa; en Hostinger, que
+> usa LiteSpeed, sí se aplican.
+
+---
+
 ## Estado de las pruebas
 
-Lo verificado en el navegador: el sitio público completo (catálogo, filtros, buscador, fichas,
-formularios, responsive), y el panel a nivel maquetado y comportamiento del front-end contra
-datos de prueba.
+Verificado en el navegador sobre el sitio público: catálogo, filtros, buscador, fichas,
+formularios, responsive y el deploy en GitHub Pages.
 
-**Lo que no pude probar acá:** el código PHP, porque esta máquina no tiene PHP ni MySQL
-instalados. Está revisado a mano y con verificación de balanceo de bloques, pero la primera
-corrida real es `instalar.php` en el hosting. Si algo falla ahí, poner en `lib/config.php`:
+Verificado sobre **PHP 8.2.12 + MariaDB 10.4** en local, de punta a punta:
+
+- Sintaxis de los 16 archivos PHP (`php -l`), sin errores.
+- Instalación completa: creación de tablas e importación de las 33 propiedades.
+- Login: rechaza contraseña incorrecta, rechaza usuario incorrecto, acepta el correcto.
+  Contraseña guardada como hash bcrypt, verificado en la base.
+- Subida de una foto de 3000 × 2000 px: se generaron las dos versiones
+  (1600 × 1067 con 47 KB, y 640 × 427 con 12 KB), se registró en la base y se regeneró
+  el catálogo con ambas rutas.
+- La foto se muestra en la ficha del sitio público.
+- Borrado de la foto: se eliminó del disco, de la base y del catálogo.
+
+Si algo falla al desplegar en el hosting, poner en `lib/config.php`:
 
 ```php
 const MODO_DEBUG = true;
