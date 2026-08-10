@@ -125,7 +125,13 @@ function crear_tablas(): void
     ");
 }
 
-/** Importa el catálogo que ya estaba en data/propiedades.js. */
+/**
+ * Importa el catálogo que ya estaba en data/propiedades.js.
+ *
+ * @throws RuntimeException si el archivo existe pero no se puede leer. Es
+ *         a propósito: si fallara en silencio, el paso siguiente regeneraría
+ *         el catálogo vacío y se perderían las propiedades del archivo.
+ */
 function importar_catalogo_inicial(): int
 {
     $ya = db()->query('SELECT COUNT(*) AS n FROM propiedades')->fetch();
@@ -134,19 +140,34 @@ function importar_catalogo_inicial(): int
     }
 
     if (!is_readable(ARCHIVO_CATALOGO)) {
-        return 0;
+        return 0;   // no hay nada que importar: instalación desde cero
     }
 
     $texto = (string) file_get_contents(ARCHIVO_CATALOGO);
-    $ini = strpos($texto, '[');
+
+    /* El array arranca DESPUÉS de "window.PROPIEDADES". Buscar simplemente
+       el primer "[" del archivo no sirve: la cabecera de comentarios puede
+       contener corchetes en los ejemplos, y se parsearía basura. */
+    $asignacion = strpos($texto, 'window.PROPIEDADES');
+    if ($asignacion === false) {
+        throw new RuntimeException('data/propiedades.js no tiene la forma esperada (falta "window.PROPIEDADES").');
+    }
+
+    $ini = strpos($texto, '[', $asignacion);
     $fin = strrpos($texto, ']');
     if ($ini === false || $fin === false || $fin <= $ini) {
-        return 0;
+        throw new RuntimeException('No se encontró el listado de propiedades dentro de data/propiedades.js.');
     }
 
     $lista = json_decode(substr($texto, $ini, $fin - $ini + 1), true);
     if (!is_array($lista)) {
-        return 0;
+        throw new RuntimeException('No se pudo leer data/propiedades.js: ' . json_last_error_msg());
+    }
+
+    /* El archivo tenía contenido pero no salió ninguna propiedad: algo está
+       mal. Cortamos antes de que se publique un catálogo vacío. */
+    if (!$lista && strlen($texto) > 400) {
+        throw new RuntimeException('data/propiedades.js parece tener contenido pero no se pudo interpretar ninguna propiedad. Se cancela la importación para no publicar un catálogo vacío.');
     }
 
     $n = 0;
