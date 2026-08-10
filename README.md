@@ -6,6 +6,16 @@ toca Guardar y el sitio se actualiza solo. Sin FTP, sin archivos, sin depender d
 Pensado para **hosting compartido de Hostinger** (PHP 8 + MySQL, incluidos en el plan).
 No usa Node, npm, ni ningún paso de compilación.
 
+**Demo:** https://guilledevs.github.io/quinteros-inmobiliaria/
+
+> ⚠️ **La demo es solo el sitio público.** GitHub Pages sirve archivos estáticos y **no ejecuta
+> PHP**, así que en esa URL funciona todo lo que ve el visitante —catálogo, filtros, buscador,
+> fichas, formularios— pero **el panel de carga no**. Para que la inmobiliaria pueda cargar
+> propiedades hace falta un hosting con PHP y MySQL: ver *Puesta en marcha* más abajo.
+>
+> Por el mismo motivo, en la demo el enlace "Panel de carga" del pie de página no lleva a
+> ningún lado.
+
 ---
 
 ## Cómo funciona por dentro
