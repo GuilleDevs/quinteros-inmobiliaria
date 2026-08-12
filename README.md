@@ -89,7 +89,33 @@ Este paso **no es opcional**: sin él, cualquiera podría escribir en la base.
 En la consola, **Firestore Database → Reglas**: pegá el contenido de `firestore.rules` y
 publicá. En **Storage → Reglas**: pegá `storage.rules` y publicá.
 
-### 7. Publicar el sitio
+### 7. Configurar CORS en el bucket ← fácil de olvidar
+
+**Sin este paso el sitio nunca muestra las propiedades nuevas.** El navegador exige permiso
+CORS para que el JavaScript de un dominio pueda leer datos de otro, y los buckets de Firebase
+vienen sin CORS configurado. Como el catálogo vive en `firebasestorage.googleapis.com` y el
+sitio en otro dominio, el navegador descarga la respuesta pero se niega a entregársela al
+código.
+
+Lo desagradable es que **falla en silencio**: el sitio sigue mostrando el catálogo incluido en
+`data/propiedades.js` y todo parece normal, salvo que los cambios nunca aparecen.
+
+No se puede hacer desde la consola web: es por línea de comandos. La forma más simple, sin
+instalar nada, es **Cloud Shell** (el ícono `>_` arriba a la derecha en Google Cloud), que ya
+viene autenticado. Ahí se sube o se pega el contenido de `cors.json` y se aplica con:
+
+    gcloud storage buckets update gs://TU-BUCKET.firebasestorage.app --cors-file=cors.json
+
+Para confirmar que quedó:
+
+    gcloud storage buckets describe gs://TU-BUCKET.firebasestorage.app --format="default(cors_config)"
+
+`origin: ["*"]` no abre ningún agujero: el catálogo y las fotos ya son de lectura pública, y
+CORS **no otorga permisos** — solo autoriza al navegador a mostrar lo que de todos modos podía
+descargar. Quién puede escribir lo siguen decidiendo las Security Rules.
+
+### 8. Publicar el sitio
+
 
 Dos caminos, elegí uno:
 
@@ -111,12 +137,12 @@ firebase deploy
 
 El archivo `firebase.json` ya está configurado con cabeceras de caché y seguridad.
 
-### 8. Importar el catálogo inicial
+### 9. Importar el catálogo inicial
 
 Entrá a `/login.html`, iniciá sesión, y después abrí **`/migrar.html`**. Copia las 33
 propiedades a Firestore y publica el catálogo. Si Firestore ya tiene datos, no hace nada.
 
-### 9. Borrar `migrar.html`
+### 10. Borrar `migrar.html`
 
 Ya cumplió su función y no conviene dejarla accesible.
 
