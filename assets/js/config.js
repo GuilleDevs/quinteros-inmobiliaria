@@ -11,16 +11,25 @@ window.SITE = {
   ciudad: "General Pico",
   provincia: "La Pampa",
 
-  /* --- IMPORTANTE ---------------------------------------------
-     Reemplazar por el número real de la inmobiliaria.
-     Formato para WhatsApp: código de país + 9 + área sin 0 +
-     número sin 15. General Pico = área 2302.
-     Ejemplo: 5492302123456
+  /* --- Contacto -------------------------------------------------
+     El mismo número en los cuatro formatos que necesita el sitio:
+
+       whatsapp        solo dígitos, para los enlaces wa.me
+       whatsappVisible cómo se muestra en pantalla
+       telefono        cómo se muestra en la sección de contacto
+       telefonoLink    formato internacional, para el enlace tel:
+
+     El "9" después del 54 indica que es un celular argentino: sin
+     él, WhatsApp no encuentra la cuenta y las llamadas desde el
+     exterior no entran.
      ------------------------------------------------------------ */
-  whatsapp: "5492302000000",
-  whatsappVisible: "+54 9 2302 00-0000",
-  telefono: "+54 2302 00-0000",
-  telefonoLink: "+542302000000",
+  whatsapp: "5492302663985",
+  whatsappVisible: "+54 9 2302 66-3985",
+  telefono: "+54 9 2302 66-3985",
+  telefonoLink: "+5492302663985",
+
+  /* OJO: este email es un ejemplo, todavía no está confirmado.
+     Aparece como enlace en contacto y en el pie. */
   email: "info@quinterosinmobiliaria.com.ar",
 
   direccion: "Calle 15 N° 1124",
