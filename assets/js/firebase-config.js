@@ -1,8 +1,6 @@
 /* ============================================================
    CONFIGURACIÓN DE FIREBASE
    ------------------------------------------------------------
-   ESTE ES EL ÚNICO ARCHIVO QUE HAY QUE COMPLETAR.
-
    Los valores salen de la consola de Firebase:
      Configuración del proyecto  →  Tus apps  →  App web  →  SDK
 
@@ -11,15 +9,20 @@
    considera públicas por diseño y está bien que estén acá y en
    el repositorio. Lo que realmente protege los datos son las
    Security Rules (firestore.rules y storage.rules).
+
+   OJO: la consola muestra un fragmento con "import ... from
+   'firebase/app'". Ese fragmento es para proyectos con npm y no
+   funciona acá: este archivo se carga como script común. Lo único
+   que hay que copiar son los valores de abajo.
    ============================================================ */
 
 window.FIREBASE_CONFIG = {
-  apiKey: "PEGAR_AQUI",
-  authDomain: "PROYECTO.firebaseapp.com",
-  projectId: "PROYECTO",
-  storageBucket: "PROYECTO.firebasestorage.app",
-  messagingSenderId: "PEGAR_AQUI",
-  appId: "PEGAR_AQUI"
+  apiKey: "AIzaSyBLwb5pMBbsaN3L2s3tHxU736ztB0tDJDY",
+  authDomain: "inmobiliaria-quinteros.firebaseapp.com",
+  projectId: "inmobiliaria-quinteros",
+  storageBucket: "inmobiliaria-quinteros.firebasestorage.app",
+  messagingSenderId: "790454613747",
+  appId: "1:790454613747:web:e49ce574eefffa8901a986"
 };
 
 /* Versión del SDK de Firebase que se carga desde el CDN de Google.
@@ -44,8 +47,8 @@ window.urlCatalogoPublicado = function () {
     "/o/" + encodeURIComponent(window.CATALOGO_RUTA) + "?alt=media";
 };
 
-/* ¿Está configurado el proyecto? Lo usan el panel y el instalador
-   para avisar con un mensaje claro en vez de fallar de forma rara. */
+/* ¿Está configurado el proyecto? Lo usan el panel y la página de
+   migración para avisar con un mensaje claro en vez de fallar raro. */
 window.firebaseConfigurado = function () {
   var c = window.FIREBASE_CONFIG || {};
   return !!c.apiKey && c.apiKey.indexOf("PEGAR") === -1

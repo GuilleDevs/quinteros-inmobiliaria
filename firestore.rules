@@ -3,24 +3,36 @@ rules_version = '2';
 /* ============================================================
    REGLAS DE FIRESTORE
    ------------------------------------------------------------
-   Acá está toda la seguridad de la base. Las claves del archivo
+   Acá está toda la seguridad de la base. Las claves de
    firebase-config.js son públicas por diseño: cualquiera puede
    verlas. Lo que impide que un extraño escriba en la base son
    estas reglas, que se aplican del lado de Google.
 
-   Criterio: la base es privada. El sitio público NO lee de acá,
-   lee el archivo JSON que publica el panel en Cloud Storage.
-   Por eso ni siquiera hace falta permitir lectura anónima.
+   IMPORTANTE — por qué no alcanza con "request.auth != null":
+   con el proveedor Email/Contraseña activado, cualquiera que
+   tenga la apiKey (o sea, cualquiera) puede crearse una cuenta
+   en el proyecto llamando a la API de registro. Si las reglas
+   solo pidieran estar autenticado, esa persona tendría permiso
+   de escritura sobre todo el catálogo.
+   Por eso se valida la cuenta concreta de la inmobiliaria.
+
+   Para sumar a otra persona: agregá su email a la lista ADMINS
+   y volvé a publicar las reglas.
    ============================================================ */
 
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    function admins() {
+      return [
+        'admin@inmobiliariaquinteros.com'
+      ];
+    }
+
     function esAdmin() {
-      // Una sola cuenta, la de la inmobiliaria. Cualquier usuario
-      // autenticado de este proyecto puede administrar el catálogo:
-      // no se crean cuentas desde el sitio, solo desde la consola.
-      return request.auth != null;
+      return request.auth != null
+          && request.auth.token.email != null
+          && request.auth.token.email.lower() in admins();
     }
 
     match /propiedades/{id} {

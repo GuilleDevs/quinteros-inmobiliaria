@@ -3,14 +3,19 @@ rules_version = '2';
 /* ============================================================
    REGLAS DE CLOUD STORAGE
    ------------------------------------------------------------
+   Mismo criterio que firestore.rules: no alcanza con exigir que
+   haya sesión iniciada, porque con Email/Contraseña activado
+   cualquiera puede registrarse en el proyecto. Se valida la
+   cuenta concreta de la inmobiliaria.
+
    Dos tipos de archivo, con criterios distintos:
 
    - catalogo/propiedades.json  → lo lee el sitio público, así que
      tiene que ser de lectura libre. Escribirlo, solo el panel.
 
-   - propiedades/*.jpg          → las fotos se muestran en el sitio,
-     así que también son de lectura libre. Subir y borrar, solo el
-     panel, y únicamente imágenes de hasta 3 MB (las fotos ya vienen
+   - propiedades/*.jpg          → las fotos se ven en el sitio, así
+     que también son de lectura libre. Subirlas y borrarlas, solo
+     el panel, y únicamente imágenes de hasta 3 MB (ya vienen
      achicadas por el navegador; el límite frena a alguien que
      intente usar el bucket como depósito).
    ============================================================ */
@@ -18,8 +23,12 @@ rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
 
-    function autenticado() {
-      return request.auth != null;
+    function esAdmin() {
+      return request.auth != null
+          && request.auth.token.email != null
+          && request.auth.token.email.lower() in [
+               'admin@inmobiliariaquinteros.com'
+             ];
     }
 
     function esImagenRazonable() {
@@ -29,14 +38,13 @@ service firebase.storage {
 
     match /catalogo/propiedades.json {
       allow read: if true;
-      allow write: if autenticado()
-                   && request.resource.size < 5 * 1024 * 1024;
+      allow write: if esAdmin() && request.resource.size < 5 * 1024 * 1024;
     }
 
     match /propiedades/{archivo} {
       allow read: if true;
-      allow write: if autenticado() && esImagenRazonable();
-      allow delete: if autenticado();
+      allow write: if esAdmin() && esImagenRazonable();
+      allow delete: if esAdmin();
     }
 
     // Cualquier otra ruta del bucket queda cerrada.
