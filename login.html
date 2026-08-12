@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Entrar al panel | Quinteros Grupo Inmobiliario</title>
+<link rel="icon" href="assets/img/favicon.png" type="image/png">
+<meta name="theme-color" content="#0A2540">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Instrument+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="assets/css/styles.css">
+</head>
+<body>
+
+<section class="hero" style="min-height:100vh;display:flex;align-items:center">
+  <div class="hero__grid" aria-hidden="true"></div>
+  <div class="wrap hero__inner" style="max-width:460px">
+
+    <a class="brand brand--light" href="index.html" style="margin-bottom:2.25rem">
+      <img class="brand__mark" src="assets/img/logo-quinteros-claro.png" width="183" height="200" alt="" aria-hidden="true">
+      <span class="brand__text">
+        <span class="brand__name" style="color:#fff">Quinteros</span>
+        <span class="brand__tag">Grupo Inmobiliario</span>
+      </span>
+    </a>
+
+    <p class="hero__eyebrow">Panel de carga</p>
+    <h1 class="hero__title" style="font-size:var(--step-3)">Entrar</h1>
+
+    <div class="notice mt-3 hide" id="aviso-config">
+      <strong>Falta configurar Firebase.</strong><br>
+      Completá <code>assets/js/firebase-config.js</code> con los datos de tu proyecto.
+      Está explicado en el README.
+    </div>
+
+    <form class="mt-4" id="form-login" autocomplete="on">
+      <div class="field">
+        <label class="field__label" for="usuario" style="color:#8FB3CB">Usuario</label>
+        <input class="input" id="usuario" name="usuario" type="email" required autofocus
+               inputmode="email" autocapitalize="off" spellcheck="false"
+               placeholder="admin@inmobiliariaquinteros.com" autocomplete="username">
+      </div>
+
+      <div class="field mt-2">
+        <label class="field__label" for="clave" style="color:#8FB3CB">Contraseña</label>
+        <input class="input" id="clave" name="clave" type="password" required autocomplete="current-password">
+      </div>
+
+      <p class="form-status" id="estado" role="status" aria-live="polite"></p>
+
+      <button class="btn btn--turq btn--lg btn--block mt-3" type="submit" id="btn-entrar">
+        Entrar al panel
+      </button>
+    </form>
+
+    <p class="mt-3" style="font-size:.86rem;color:#7897AE">
+      ¿Olvidaste la contraseña?
+      <button type="button" id="btn-recuperar"
+              style="color:var(--turq-400);text-decoration:underline;text-underline-offset:3px">
+        Te mandamos un email para restablecerla
+      </button>
+    </p>
+
+  </div>
+</section>
+
+<script src="assets/js/firebase-config.js"></script>
+<script type="module">
+  const estado = document.getElementById("estado");
+  const form = document.getElementById("form-login");
+  const btn = document.getElementById("btn-entrar");
+
+  function aviso(texto, tipo) {
+    estado.className = "form-status " + (tipo === "ok" ? "is-ok" : "is-error");
+    estado.textContent = texto;
+  }
+
+  if (!window.firebaseConfigurado()) {
+    document.getElementById("aviso-config").classList.remove("hide");
+    form.querySelectorAll("input, button").forEach(el => el.disabled = true);
+  } else {
+    const fb = await import("./assets/js/fb.js");
+
+    /* Si ya hay sesión abierta, directo al panel. */
+    fb.alCambiarSesion(u => { if (u) location.replace("admin.html"); });
+
+    form.addEventListener("submit", async (ev) => {
+      ev.preventDefault();
+      btn.disabled = true;
+      btn.textContent = "Entrando...";
+      estado.className = "form-status";
+
+      const r = await fb.entrar(
+        document.getElementById("usuario").value,
+        document.getElementById("clave").value
+      );
+
+      if (r.ok) {
+        location.replace("admin.html");
+      } else {
+        aviso(r.error);
+        btn.disabled = false;
+        btn.textContent = "Entrar al panel";
+      }
+    });
+
+    document.getElementById("btn-recuperar").addEventListener("click", async () => {
+      const email = document.getElementById("usuario").value.trim();
+      if (!email) {
+        aviso("Escribí primero tu usuario y volvé a tocar el enlace.");
+        document.getElementById("usuario").focus();
+        return;
+      }
+      const r = await fb.recuperarClave(email);
+      if (r.ok) {
+        aviso("Listo. Te llegó un email a " + email + " con el enlace para cambiar la contraseña. Revisá también el correo no deseado.", "ok");
+      } else {
+        aviso(r.error);
+      }
+    });
+  }
+</script>
+</body>
+</html>

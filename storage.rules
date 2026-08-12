@@ -1,0 +1,47 @@
+rules_version = '2';
+
+/* ============================================================
+   REGLAS DE CLOUD STORAGE
+   ------------------------------------------------------------
+   Dos tipos de archivo, con criterios distintos:
+
+   - catalogo/propiedades.json  → lo lee el sitio público, así que
+     tiene que ser de lectura libre. Escribirlo, solo el panel.
+
+   - propiedades/*.jpg          → las fotos se muestran en el sitio,
+     así que también son de lectura libre. Subir y borrar, solo el
+     panel, y únicamente imágenes de hasta 3 MB (las fotos ya vienen
+     achicadas por el navegador; el límite frena a alguien que
+     intente usar el bucket como depósito).
+   ============================================================ */
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function autenticado() {
+      return request.auth != null;
+    }
+
+    function esImagenRazonable() {
+      return request.resource.contentType.matches('image/.*')
+          && request.resource.size < 3 * 1024 * 1024;
+    }
+
+    match /catalogo/propiedades.json {
+      allow read: if true;
+      allow write: if autenticado()
+                   && request.resource.size < 5 * 1024 * 1024;
+    }
+
+    match /propiedades/{archivo} {
+      allow read: if true;
+      allow write: if autenticado() && esImagenRazonable();
+      allow delete: if autenticado();
+    }
+
+    // Cualquier otra ruta del bucket queda cerrada.
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

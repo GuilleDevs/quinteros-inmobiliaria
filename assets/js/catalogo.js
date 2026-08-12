@@ -337,9 +337,17 @@
     if (document.readyState !== "loading") fn();
     else document.addEventListener("DOMContentLoaded", fn);
   }
-  ready(function () {
+
+  function iniciar() {
     initDestacadas();
     initZonas();
     initCatalogo();
-  });
+  }
+
+  /* Esperamos a que el catálogo esté cargado. En el panel de carga, que
+     usa cardHTML para la vista previa pero no incluye catalogo-datos.js,
+     no existe esa promesa: ahí alcanza con esperar al DOM. */
+  var arranque = window.QUINTEROS_CATALOGO;
+  if (arranque && typeof arranque.then === "function") arranque.then(iniciar);
+  else ready(iniciar);
 })();

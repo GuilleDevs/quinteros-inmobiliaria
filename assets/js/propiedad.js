@@ -13,7 +13,14 @@
     else document.addEventListener("DOMContentLoaded", fn);
   }
 
-  ready(function () {
+  /* Arranca cuando el catálogo terminó de cargarse (ver catalogo-datos.js). */
+  function alEstarListo(fn) {
+    var arranque = window.QUINTEROS_CATALOGO;
+    if (arranque && typeof arranque.then === "function") arranque.then(fn);
+    else ready(fn);
+  }
+
+  alEstarListo(function () {
     var root = document.querySelector("[data-propiedad]");
     if (!root) return;
 

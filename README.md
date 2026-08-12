@@ -1,134 +1,170 @@
 # Quinteros Grupo Inmobiliario — sitio web
 
-Sitio con **panel de carga propio**: la inmobiliaria entra, sube las fotos desde su computadora,
-toca Guardar y el sitio se actualiza solo. Sin FTP, sin archivos, sin depender de nadie.
+Sitio con **panel de carga propio**: la inmobiliaria entra, sube las fotos desde su
+computadora, toca Guardar y el sitio se actualiza solo.
 
-Pensado para **hosting compartido de Hostinger** (PHP 8 + MySQL, incluidos en el plan).
-No usa Node, npm, ni ningún paso de compilación.
+Backend en **Firebase** (Firestore + Auth + Cloud Storage). Sin servidor propio, sin PHP,
+sin paso de compilación: son archivos estáticos y el SDK de Firebase se carga desde el CDN
+de Google.
 
 **Demo:** https://guilledevs.github.io/quinteros-inmobiliaria/
 
-> ⚠️ **La demo es solo el sitio público.** GitHub Pages sirve archivos estáticos y **no ejecuta
-> PHP**, así que en esa URL funciona todo lo que ve el visitante —catálogo, filtros, buscador,
-> fichas, formularios— pero **el panel de carga no**. Para que la inmobiliaria pueda cargar
-> propiedades hace falta un hosting con PHP y MySQL: ver *Puesta en marcha* más abajo.
->
-> Por el mismo motivo, en la demo el enlace "Panel de carga" del pie de página no lleva a
-> ningún lado.
+> La demo muestra el catálogo semilla incluido en el repositorio. El panel necesita un
+> proyecto de Firebase configurado.
 
 ---
 
 ## Cómo funciona por dentro
 
 ```
-        Panel (admin.php)                    Sitio público
-                │                                  ▲
-                │ guarda                           │ lee
-                ▼                                  │
-         MySQL  ──────► genera ──────► data/propiedades.js
-    (fuente de verdad)   automático     (archivo estático)
+     Panel (admin.html)                      Sitio público
+            │                                      ▲
+            │ guarda                               │ una sola petición
+            ▼                                      │
+      Firestore  ──── publica ────►  catalogo/propiedades.json
+   (fuente de verdad)                  (en Cloud Storage)
 ```
 
-La base de datos manda. Cada vez que se guarda algo, el servidor **regenera solo** el archivo
-`data/propiedades.js`, que es lo único que consume el sitio público.
+El sitio público **no consulta Firestore**. Lee un único archivo JSON que el panel
+republica cada vez que se guarda algo.
 
-La ventaja: el visitante nunca toca la base. Ve un sitio estático, instantáneo, y si la base
-llegara a caerse el sitio sigue funcionando igual con el último catálogo publicado.
+Eso trae tres ventajas concretas: una sola petición en vez de treinta y tres, no se carga
+el SDK de Firebase en páginas que no lo necesitan, y no se gastan lecturas de la base con
+cada visita. Además, si Firestore tuviera un problema, el sitio sigue en pie.
+
+Y si ese archivo no está disponible, el sitio usa el catálogo incluido en
+`data/propiedades.js`, así que nunca aparece vacío.
 
 ---
 
-## Puesta en marcha (una sola vez)
+## Puesta en marcha
 
-### 1. Crear la base de datos
+### 1. Crear el proyecto
 
-En el panel de Hostinger → **Bases de datos → Administración de bases de datos MySQL**.
-Crear una base y un usuario. Hostinger muestra cuatro datos: host, nombre de base, usuario y contraseña.
+En https://console.firebase.google.com → **Agregar proyecto**. Podés desactivar Google
+Analytics, no hace falta.
 
-### 2. Completar `lib/config.php`
+### 2. Pasar al plan Blaze
 
-```php
-const DB_HOST    = 'localhost';
-const DB_NOMBRE  = 'uXXXXXXXX_quinteros';   // ← el que dio Hostinger
-const DB_USUARIO = 'uXXXXXXXX_quinteros';   // ←
-const DB_CLAVE   = 'la-clave-de-la-base';   // ←
+Abajo a la izquierda, **Actualizar** → **Blaze**. Requiere tarjeta de crédito.
+
+Es obligatorio: **Cloud Storage no funciona en el plan gratuito Spark**. La franja gratuita
+de Blaze es amplia y para una inmobiliaria la factura debería ser cero o centavos, pero
+**no hay tope de gasto duro**. Configurá una alerta de presupuesto en
+*Facturación → Presupuestos y alertas* apenas puedas.
+
+### 3. Registrar la app web y copiar las claves
+
+**Configuración del proyecto** (el engranaje) → **Tus apps** → icono `</>` → registrás la
+app. Firebase muestra un bloque `firebaseConfig`. Copiá esos valores a
+`assets/js/firebase-config.js`.
+
+Esas claves **no son secretas**: viajan al navegador de cualquier visitante, Google las
+considera públicas y está bien que estén en el repositorio. Lo que protege los datos son
+las reglas del punto 6.
+
+### 4. Activar Authentication y crear la cuenta
+
+**Authentication** → **Comenzar** → pestaña *Sign-in method* → habilitar
+**Correo electrónico/contraseña**.
+
+Después, pestaña *Users* → **Agregar usuario**:
+
+- Email: `admin@inmobiliariaquinteros.com`
+- Contraseña: la que elijas
+
+Esa es la cuenta con la que entra la inmobiliaria. No se crean cuentas desde el sitio: si
+alguna vez hace falta otra persona, se agrega desde acá.
+
+### 5. Crear la base y el bucket
+
+- **Firestore Database** → *Crear base de datos* → **modo de producción** → región
+  `southamerica-east1` (São Paulo, la más cercana).
+- **Storage** → *Comenzar* → misma región.
+
+### 6. Publicar las reglas de seguridad
+
+Este paso **no es opcional**: sin él, cualquiera podría escribir en la base.
+
+En la consola, **Firestore Database → Reglas**: pegá el contenido de `firestore.rules` y
+publicá. En **Storage → Reglas**: pegá `storage.rules` y publicá.
+
+### 7. Publicar el sitio
+
+Dos caminos, elegí uno:
+
+**a) Seguir en GitHub Pages** (ya está andando, no requiere instalar nada)
+
+Solo hay que autorizar el dominio en Firebase: **Authentication → Settings → Dominios
+autorizados** → agregar `guilledevs.github.io`.
+
+**b) Firebase Hosting** (dominio propio, CDN de Google)
+
+Requiere Node.js instalado:
+
+```bash
+npm install -g firebase-tools
+firebase login
+firebase use --add
+firebase deploy
 ```
 
-Es el **único archivo** que hay que tocar.
+El archivo `firebase.json` ya está configurado con cabeceras de caché y seguridad.
 
-### 3. Subir todo por FTP o por el administrador de archivos
+### 8. Importar el catálogo inicial
 
-Todo el contenido de la carpeta va a `public_html`.
+Entrá a `/login.html`, iniciá sesión, y después abrí **`/migrar.html`**. Copia las 33
+propiedades a Firestore y publica el catálogo. Si Firestore ya tiene datos, no hace nada.
 
-### 4. Permisos de escritura
+### 9. Borrar `migrar.html`
 
-Estas dos rutas tienen que ser escribibles por PHP (permisos **755**):
-
-- `assets/img/propiedades/` — donde se guardan las fotos
-- `data/` — donde se escribe el catálogo
-
-En Hostinger normalmente ya vienen así. Si al subir una foto aparece un error de permisos,
-se corrige con clic derecho sobre la carpeta → Permisos.
-
-### 5. Abrir `tudominio.com/instalar.php`
-
-Crea las tablas, **importa las 33 propiedades** que ya venían cargadas y pide la contraseña
-del panel.
-
-### 6. Borrar `instalar.php`
-
-**Este paso no es opcional.** Mientras el archivo siga en el servidor es una puerta abierta.
-El instalador se autobloquea después de la primera corrida, pero igual hay que borrarlo.
-
-### 7. Activar SSL y forzar HTTPS
-
-Con el certificado ya activo en Hostinger, descomentar el bloque `RewriteEngine` del final
-de `.htaccess`. **Recién después de activar el SSL**, si no el sitio queda inaccesible.
+Ya cumplió su función y no conviene dejarla accesible.
 
 ---
 
-## El día a día: cómo carga propiedades la inmobiliaria
+## El día a día
 
-1. Entrar a `tudominio.com/admin.php` y poner la contraseña.
-2. **+ Nueva propiedad** (nace oculta, para poder trabajarla tranquilo).
-3. Arrastrar las fotos a la zona punteada, o elegirlas desde la computadora.
+1. Entrar a `/admin.html` (o por el enlace **Panel de carga** del pie del sitio).
+2. **+ Nueva propiedad** — nace oculta, para poder trabajarla tranquilo.
+3. Arrastrar las fotos, o elegirlas desde la computadora.
 4. Completar los datos.
 5. Marcar **Publicada** y tocar **Guardar cambios**.
 
-Listo. La propiedad ya está en el sitio.
+Listo, ya está en el sitio.
 
 ### Sobre las fotos
 
-Se pueden sacar con el celular y subir tal cual. El servidor, solo:
+Se pueden sacar con el celular y subir tal cual. **El navegador las procesa antes de
+subirlas**: las endereza si venían rotadas, genera una versión de 1600 px para la ficha y
+otra de 640 px para las tarjetas, y las comprime. Una foto de 6 MB termina subiendo unos
+200 KB.
 
-- verifica que sea realmente una imagen,
-- la endereza si venía rotada (las fotos de celular traen una marca de orientación),
-- genera dos versiones: **1600 px** para la ficha y **640 px** para las tarjetas del catálogo,
-- las comprime a ~200 KB.
+Hacerlo en el navegador y no en el servidor es a propósito: la subida es mucho más rápida
+y no se gasta cuota de Firebase moviendo megas al pedo.
 
-Una foto de 6 MB del celular termina pesando 200 KB sin que nadie haga nada.
+La **primera foto es la portada**. El orden se cambia con las flechas ← → que aparecen al
+pasar el mouse por encima.
 
-La **primera foto es la portada**: es la que se ve en el catálogo. Se cambia el orden con las
-flechas ← → que aparecen al pasar el mouse por encima.
-
-> **Una excepción:** las fotos en formato **HEIC** (iPhone con ajustes por defecto) no se pueden
-> procesar. Se arregla una vez en el teléfono: *Ajustes → Cámara → Formatos → "Más compatible"*.
-> A partir de ahí el iPhone saca las fotos en JPG. El panel avisa con ese mismo mensaje si
-> alguien sube una HEIC.
+> **Fotos HEIC (iPhone):** no se pueden procesar. Se arregla una vez en el teléfono:
+> *Ajustes → Cámara → Formatos → "Más compatible"*. El panel avisa con ese mismo mensaje
+> si alguien sube una.
 
 ### Detalles útiles
 
 - **Publicada** desmarcado → desaparece del sitio pero no se pierde.
 - **Destacada** → aparece en la portada.
 - **Precio vacío** → se publica como “Consultar”.
-- La **dirección web** es lo que va en el link de la propiedad. Si se cambia, los enlaces que ya
-  se compartieron por WhatsApp dejan de funcionar.
-- **Eliminar** borra también las fotos del servidor. No se puede deshacer.
+- La **dirección web** es lo que va en el link de la propiedad. Si se cambia, los enlaces
+  que ya se compartieron por WhatsApp dejan de funcionar.
+- **Eliminar** borra también las fotos de Storage. No se puede deshacer.
+- **¿Olvidaste la contraseña?** En la pantalla de login hay un enlace que manda un email
+  para restablecerla. Ya no hace falta tocar la base.
 
 ---
 
 ## Todavía falta: teléfono y WhatsApp reales
 
-En `assets/js/config.js` hay valores de ejemplo que hay que reemplazar:
+En `assets/js/config.js` hay valores de ejemplo:
 
 ```js
 whatsapp: "5492302000000",          // ← número real, solo dígitos
@@ -141,20 +177,15 @@ email: "info@quinterosinmobiliaria.com.ar",
 Formato de `whatsapp`: código de país + **9** + característica sin el 0 + número sin el 15.
 General Pico es 2302 → si el número es `2302 15-123456`, va `5492302123456`.
 
-Con eso quedan actualizados de una vez el botón flotante, el del header, el de cada propiedad,
-los del footer y el formulario de contacto.
-
-También conviene reemplazar `https://www.quinterosinmobiliaria.com.ar` por el dominio real en
-`sitemap.xml`, `robots.txt` y las etiquetas `canonical` / `og:url` de cada página.
+También conviene reemplazar `https://www.quinterosinmobiliaria.com.ar` por el dominio real
+en `sitemap.xml`, `robots.txt` y los `canonical` / `og:url` de cada página.
 
 ### Fotos del sitio (no de las propiedades)
 
-Dos imágenes siguen siendo placeholder de marca, porque no tengo los archivos:
+Dos imágenes siguen siendo placeholder de marca:
 
 - **Hero de la portada** → en `index.html`, buscar `<!-- Para usar una foto real ... -->`
 - **Foto del equipo** → en `index.html` y `nosotros.html`, buscar `Reemplazar por la foto del equipo`
-
-Sirve la del destacado "Quiénes somos" de Instagram.
 
 ---
 
@@ -170,145 +201,97 @@ propiedades.html      Catálogo completo con todos los filtros
 propiedad.html        Ficha de una propiedad (?id=...)
 nosotros.html · servicios.html · tasaciones.html · contacto.html · 404.html
 
-── Panel (PHP) ───────────────────────────────────────
-admin.php             El panel de carga
-login.php · logout.php
-instalar.php          Se corre una vez y se borra
-api/                  Endpoints que usa el panel
-  guardar.php · eliminar.php · obtener.php
-  subir-imagen.php · imagenes.php · cambiar-clave.php
-lib/
-  config.php          ← EL ÚNICO ARCHIVO A EDITAR (datos de la base)
-  db.php              Conexión
-  auth.php            Sesión, login, CSRF
-  imagen.php          Validación, rotación, redimensionado
-  catalogo.php        Lectura/escritura + generación del archivo público
+── Panel ─────────────────────────────────────────────
+login.html            Acceso, con recuperación de contraseña por email
+admin.html            El panel de carga
+migrar.html           Carga inicial. Se corre una vez y se borra.
+
+── Código ────────────────────────────────────────────
+assets/js/
+  firebase-config.js  ← EL ÚNICO ARCHIVO A COMPLETAR (claves del proyecto)
+  fb.js               Toda la conversación con Firebase. Si algún día hay que
+                      cambiar de proveedor, se reescribe esto y nada más.
+  imagen-cliente.js   Rotación, redimensionado y compresión en el navegador
+  admin-panel.js      La lógica del panel
+  catalogo-datos.js   Carga del catálogo en el sitio público, con respaldo
+  config.js           Teléfonos, horarios, redes, tipologías y zonas
+  app.js              Header, menú, formularios, WhatsApp, animaciones
+  catalogo.js         Grilla, filtros y buscador
+  propiedad.js        Ficha, galería, lightbox, mapa
+assets/css/styles.css Todo el diseño, un solo archivo
+
+── Firebase ──────────────────────────────────────────
+firestore.rules       Quién puede leer y escribir la base
+storage.rules         Quién puede subir y leer las fotos
+firebase.json         Hosting: caché y cabeceras de seguridad
+.firebaserc           Id del proyecto
 
 ── Datos ─────────────────────────────────────────────
-data/propiedades.js       GENERADO. No editar a mano: se pisa al guardar.
-assets/img/propiedades/   Fotos subidas desde el panel
-assets/js/config.js       Teléfonos, horarios, redes, tipologías y zonas
-assets/css/styles.css     Todo el diseño, un solo archivo
+data/propiedades.js   Catálogo semilla: respaldo del sitio y fuente de migrar.html
 ```
 
 ---
 
 ## Seguridad
 
-Lo que está implementado:
+- **Autenticación** gestionada por Firebase: contraseñas hasheadas del lado de Google,
+  bloqueo automático por intentos repetidos y recuperación por email.
+- **Security Rules**: la base y el bucket son privados para escritura. Solo una sesión
+  autenticada puede modificar propiedades o subir fotos. El catálogo publicado y las fotos
+  son de lectura libre, porque tienen que verse en el sitio.
+- **Límite de subida**: Storage rechaza cualquier archivo que no sea imagen o que supere
+  los 3 MB.
+- Las claves de `firebase-config.js` son públicas por diseño; la seguridad está en las
+  reglas, no en esconderlas.
 
-- Contraseña guardada como **hash bcrypt**, nunca en texto plano.
-- **Token CSRF** en toda operación que modifica datos.
-- Sesión con cookie `HttpOnly` + `SameSite=Lax`, y cierre por inactividad a las 4 horas.
-- Freno tras 8 intentos fallidos de login, más una demora en cada intento.
-- **Subida de fotos:** se valida que el archivo sea realmente una imagen, se re-codifica entera
-  y se le asigna un nombre generado por el servidor. Re-codificarla destruye cualquier contenido
-  escondido dentro del archivo, así que un archivo malicioso disfrazado de imagen no sobrevive.
-- `.htaccess` en la carpeta de fotos que impide ejecutar cualquier cosa que no sea una imagen.
-- `.htaccess` en `lib/` que bloquea el acceso web a las credenciales.
-- Consultas siempre con sentencias preparadas (sin concatenar datos en el SQL).
-- Cabeceras `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`.
+Conviene saber: es **una sola cuenta compartida** por la oficina, así que no queda registro
+de quién hizo qué. Pasar a cuentas individuales es agregar usuarios en la consola de
+Authentication, sin tocar código.
 
-Limitaciones que conviene conocer:
+---
 
-- El freno de login es **por sesión**, no por IP. Frena el caso normal, no a alguien decidido con
-  herramientas. Si en algún momento preocupa, la solución sencilla es agregar una protección con
-  contraseña a nivel de directorio desde el panel de Hostinger.
-- Es **una sola contraseña compartida** para la oficina: no queda registro de quién hizo qué.
-  Pasar a usuarios individuales es un cambio acotado si más adelante hace falta.
+## Costos
 
-### Si se pierde la contraseña
+Con el plan Blaze y el volumen de una inmobiliaria local, esto entra cómodo en la franja
+gratuita:
 
-No se puede recuperar, pero sí reponer. En **phpMyAdmin** (panel de Hostinger), sobre la base
-del sitio, ejecutar en la pestaña SQL:
+| | Gratis por mes | Uso esperado |
+|---|---|---|
+| Firestore lecturas | 50.000 por día | El sitio público no lee la base |
+| Firestore escrituras | 20.000 por día | Unas pocas por semana |
+| Storage almacenado | 5 GB | ~200 KB por foto |
+| Storage descargas | 1 GB por día | Las fotos del catálogo |
+| Hosting | 10 GB | El sitio pesa menos de 1 MB |
 
-```sql
-DELETE FROM ajustes WHERE clave = 'password_hash';
+Los números pueden cambiar: verificá las condiciones vigentes al contratar. Y configurá la
+alerta de presupuesto.
+
+---
+
+## Volver a la versión PHP
+
+Existe una versión anterior completa con backend PHP + MySQL, pensada para hosting
+compartido tipo Hostinger, probada de punta a punta. Está en la etiqueta **`v1-php`**:
+
+```bash
+git checkout v1-php
 ```
-
-Después volver a subir `instalar.php` y abrirlo: como ya no hay contraseña, deja definir una
-nueva. Las propiedades y las fotos no se tocan. Al terminar, **borrar `instalar.php` otra vez**.
-
----
-
-## SEO
-
-Ya implementado: títulos y descripciones únicos por página orientados a búsqueda local, páginas
-separadas por operación y tipología, datos estructurados `RealEstateAgent` en la portada y por
-propiedad en cada ficha, `sitemap.xml`, `robots.txt` (que bloquea el panel), canonicals,
-Open Graph, `lang="es-AR"`, imágenes con `loading="lazy"` y compresión activada por `.htaccess`.
-
-Lo que falta hacer del lado del cliente, que es lo que más mueve la aguja en SEO local:
-
-1. Crear o reclamar el **perfil de Google Business Profile** con la dirección de Calle 15 N° 1124,
-   el horario y fotos. Es lo que hace aparecer en el mapa.
-2. Dar de alta el sitio en **Google Search Console** y enviar el `sitemap.xml`.
-3. Poner el link de la web en la bio de Instagram (hoy está el `wa.link`).
-4. Cargar fotos reales: sin contenido visual propio, Google no prioriza.
-
----
-
-## Requisitos técnicos
-
-- **PHP 8.0 o superior** con las extensiones **PDO MySQL**, **GD** y **EXIF**.
-  En Hostinger vienen activadas por defecto; se verifica en *Avanzado → Configuración de PHP*.
-- **MySQL 5.7+ / MariaDB 10.3+**
-- Navegadores actuales (Chrome, Edge, Firefox, Safari). Diseño responsive, probado a 375 px y en escritorio.
-
----
-
-## Desarrollo local
-
-Para trabajar en la máquina propia, con el panel funcionando, hace falta PHP y MySQL.
-La forma más simple en Windows es **XAMPP** (https://www.apachefriends.org), que trae los dos.
-
-Una sola vez:
-
-1. Instalar XAMPP.
-2. Habilitar la extensión **GD** (procesa las fotos): en `C:\xampp\php\php.ini` buscar
-   `;extension=gd` y sacarle el punto y coma del principio.
-3. Crear la base: abrir `C:\xampp\mysql\bin\mysql.exe -u root` y ejecutar
-   `CREATE DATABASE quinteros CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;`
-4. Copiar `lib/config.example.php` a `lib/config.php` y poner los datos locales:
-   ```php
-   const DB_NOMBRE  = 'quinteros';
-   const DB_USUARIO = 'root';
-   const DB_CLAVE   = '';        // XAMPP viene sin contraseña
-   ```
-
-Después, cada vez: **doble clic en `iniciar-local.bat`**. Levanta MySQL y el servidor PHP,
-y abre el navegador en el panel.
-
-- Sitio: `http://localhost:8080/`
-- Panel: `http://localhost:8080/admin.php`
-- Instalador: `http://localhost:8080/instalar.php` (la primera vez)
-
-> El servidor PHP integrado ignora los `.htaccess`. En local no importa; en Hostinger, que
-> usa LiteSpeed, sí se aplican.
 
 ---
 
 ## Estado de las pruebas
 
-Verificado en el navegador sobre el sitio público: catálogo, filtros, buscador, fichas,
-formularios, responsive y el deploy en GitHub Pages.
+Verificado en el navegador sobre esta versión:
 
-Verificado sobre **PHP 8.2.12 + MariaDB 10.4** en local, de punta a punta:
+- Sitio público completo: catálogo, filtros, buscador con parámetros en la URL, fichas,
+  formularios y responsive.
+- La carga asíncrona del catálogo y su respaldo cuando el publicado no está disponible.
+- `login.html`, `admin.html` y `migrar.html` cargan sin errores y avisan de forma clara
+  cuando falta configurar Firebase.
 
-- Sintaxis de los 16 archivos PHP (`php -l`), sin errores.
-- Instalación completa: creación de tablas e importación de las 33 propiedades.
-- Login: rechaza contraseña incorrecta, rechaza usuario incorrecto, acepta el correcto.
-  Contraseña guardada como hash bcrypt, verificado en la base.
-- Subida de una foto de 3000 × 2000 px: se generaron las dos versiones
-  (1600 × 1067 con 47 KB, y 640 × 427 con 12 KB), se registró en la base y se regeneró
-  el catálogo con ambas rutas.
-- La foto se muestra en la ficha del sitio público.
-- Borrado de la foto: se eliminó del disco, de la base y del catálogo.
+**Lo que no pude probar:** el camino contra Firebase real (login, guardado, subida de
+fotos, publicación del catálogo), porque el proyecto todavía no existe. La lógica está
+escrita y revisada, pero la primera corrida real va a ser la tuya. Si algo falla, la
+consola del navegador (F12) va a mostrar el error de Firebase, que suele ser explícito.
 
-Si algo falla al desplegar en el hosting, poner en `lib/config.php`:
-
-```php
-const MODO_DEBUG = true;
-```
-
-y el error aparece en pantalla en vez de quedar solo en el log. **Volver a `false` después.**
+La versión PHP sí quedó probada de punta a punta, y está en la etiqueta `v1-php`.

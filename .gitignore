@@ -2,19 +2,22 @@
 #  NO SUBIR AL REPOSITORIO
 # ============================================================
 
-# --- Credenciales de la base de datos --------------------------------
-# Este archivo lleva usuario y contraseña de MySQL. Nunca va al repo.
-# La plantilla versionada es lib/config.example.php
-lib/config.php
+# --- Firebase --------------------------------------------------------
+# Las claves de assets/js/firebase-config.js NO van acá: son públicas
+# por diseño (viajan al navegador de cualquier visitante) y lo que
+# protege los datos son firestore.rules y storage.rules.
+.firebase/
+firebase-debug.log
+firebase-debug.*.log
+firestore-debug.log
+ui-debug.log
+*-debug.log
 
 # --- Fotos subidas desde el panel ------------------------------------
-# Las carga la inmobiliaria en producción: no son código y pesan.
+# Ahora viven en Cloud Storage, no en el repositorio. Esta carpeta queda
+# solo por compatibilidad con la versión anterior (etiqueta v1-php).
 assets/img/propiedades/*
-!assets/img/propiedades/.htaccess
 !assets/img/propiedades/LEEME.txt
-
-# --- Archivos temporales del generador -------------------------------
-data/propiedades.js.tmp
 
 # --- Sistema operativo -----------------------------------------------
 Thumbs.db
@@ -32,6 +35,7 @@ $RECYCLE.BIN/
 *.sublime-workspace
 
 # --- Varios ----------------------------------------------------------
+node_modules/
 *.log
 *.bak
 *.tmp

@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Importar catálogo inicial | Quinteros</title>
+<link rel="icon" href="assets/img/favicon.png" type="image/png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Instrument+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="assets/css/styles.css">
+</head>
+<body class="admin">
+
+<div class="admin__bar">
+  <div class="wrap">
+    <img class="brand__mark" src="assets/img/logo-quinteros-claro.png" width="183" height="200" alt="" aria-hidden="true">
+    <h1>Importar el catálogo inicial</h1>
+  </div>
+</div>
+
+<div class="wrap" style="max-width:720px;padding-block:2.5rem 5rem">
+  <div class="panel">
+    <p class="panel__title">Se corre una sola vez</p>
+    <p class="muted" style="font-size:.94rem">
+      Copia a Firestore las propiedades que vienen en <code>data/propiedades.js</code>
+      y publica el catálogo. Si en Firestore ya hay propiedades cargadas, no hace nada:
+      no pisa lo que exista.
+    </p>
+    <p class="field__hint mt-2">Las fotos no se migran: el archivo semilla no tiene ninguna. Se cargan después desde el panel.</p>
+
+    <div id="zona-estado" class="mt-3"></div>
+
+    <div class="toolbar mt-3" id="zona-botones"></div>
+
+    <div id="detalle" class="mt-3"></div>
+  </div>
+</div>
+
+<script src="assets/js/config.js"></script>
+<script src="assets/js/firebase-config.js"></script>
+<script src="data/propiedades.js"></script>
+<script type="module">
+  const est = document.getElementById("zona-estado");
+  const botones = document.getElementById("zona-botones");
+  const detalle = document.getElementById("detalle");
+
+  const aviso = (html, clase) =>
+    est.innerHTML = `<div class="${clase || "notice"}">${html}</div>`;
+
+  if (!window.firebaseConfigurado()) {
+    aviso("<strong>Falta configurar Firebase.</strong><br>Completá <code>assets/js/firebase-config.js</code> con los datos de tu proyecto.");
+  } else {
+    const fb = await import("./assets/js/fb.js");
+
+    fb.alCambiarSesion(async (usuario) => {
+      if (!usuario) {
+        aviso('<strong>Necesitás entrar primero.</strong><br>Esta página solo funciona con la sesión iniciada, para que nadie más pueda escribir en tu base.');
+        botones.innerHTML = '<a class="btn btn--primary btn--sm" href="login.html">Ir a entrar</a>';
+        return;
+      }
+
+      const existentes = await fb.listarPropiedades();
+      const semilla = window.PROPIEDADES || [];
+
+      if (existentes.length > 0) {
+        aviso(`<strong>Firestore ya tiene ${existentes.length} propiedades.</strong><br>La importación no se ejecuta para no duplicar ni pisar nada.`);
+        botones.innerHTML =
+          '<a class="btn btn--primary btn--sm" href="admin.html">Ir al panel</a>' +
+          '<a class="btn btn--ghost btn--sm" href="index.html">Ver el sitio</a>';
+        return;
+      }
+
+      if (!semilla.length) {
+        aviso("<strong>No hay nada para importar.</strong><br>El archivo <code>data/propiedades.js</code> está vacío.");
+        return;
+      }
+
+      aviso(`Listo para importar <strong>${semilla.length} propiedades</strong> a Firestore, con la cuenta ${usuario.email}.`);
+      botones.innerHTML = '<button class="btn btn--primary" id="btn-importar" type="button">Importar ahora</button>';
+
+      document.getElementById("btn-importar").addEventListener("click", async () => {
+        const btn = document.getElementById("btn-importar");
+        btn.disabled = true;
+        btn.textContent = "Importando...";
+
+        const lista = [];
+        let n = 0;
+
+        try {
+          for (const p of semilla) {
+            const datos = {
+              titulo: p.titulo || "",
+              slug: p.id || "",
+              direccion: p.direccion || "",
+              operacion: p.operacion || "venta",
+              tipo: p.tipo || "casa",
+              zona: p.zona || "centro",
+              estado: p.estado || "disponible",
+              fecha: p.fecha || "",
+              publicada: p.publicada !== false,
+              destacada: !!p.destacada,
+              dormitorios: p.dormitorios ?? null,
+              banos: p.banos ?? null,
+              ambientes: p.ambientes ?? null,
+              cocheras: p.cocheras ?? null,
+              m2Cubiertos: p.m2Cubiertos ?? null,
+              m2Terreno: p.m2Terreno ?? null,
+              precio: p.precio ?? null,
+              moneda: p.moneda || "USD",
+              expensas: p.expensas ?? null,
+              descripcion: p.descripcion || "",
+              caracteristicas: p.caracteristicas || [],
+              mapaQuery: p.mapaQuery || "",
+              imagenes: [],
+              orden: n
+            };
+            const id = await fb.crearPropiedad(datos);
+            lista.push({ id, ...datos });
+            n++;
+            btn.textContent = `Importando ${n} de ${semilla.length}...`;
+          }
+
+          const pub = await fb.publicarCatalogo(lista);
+
+          aviso(`<strong>Importación terminada.</strong><br>${n} propiedades en Firestore. Catálogo publicado con ${pub.publicadas} visibles en el sitio.`, "form-status is-ok");
+          detalle.innerHTML =
+            '<div class="notice"><strong>Último paso:</strong> borrá <code>migrar.html</code> del proyecto. ' +
+            'Ya no hace falta y no conviene dejarla accesible.</div>';
+          botones.innerHTML =
+            '<a class="btn btn--primary" href="admin.html">Ir al panel</a>' +
+            '<a class="btn btn--ghost" href="index.html">Ver el sitio</a>';
+
+        } catch (e) {
+          aviso(`<strong>Falló la importación.</strong><br>${(e && e.message) || e}<br><br>Se alcanzaron a crear ${n} propiedades. Revisá que las Security Rules estén publicadas y volvé a intentar: las que ya están no se duplican porque la próxima corrida detecta que la base no está vacía.`, "form-status is-error");
+          btn.disabled = false;
+          btn.textContent = "Reintentar";
+        }
+      });
+    });
+  }
+</script>
+</body>
+</html>

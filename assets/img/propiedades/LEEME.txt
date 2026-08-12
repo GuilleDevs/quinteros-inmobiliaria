@@ -1,32 +1,21 @@
-FOTOS DE LAS PROPIEDADES
-========================
+ESTA CARPETA YA NO SE USA
+=========================
 
-NO hace falta poner archivos acá a mano.
+Las fotos de las propiedades ahora viven en Cloud Storage de Firebase,
+no en el repositorio.
 
-Esta carpeta la maneja sola el panel de carga (admin.php). Cuando la
-inmobiliaria sube una foto desde su computadora, el servidor:
+Cuando la inmobiliaria sube una foto desde el panel, el NAVEGADOR:
 
-  1. verifica que sea realmente una imagen,
-  2. la endereza si venía rotada (fotos de celular),
-  3. genera dos versiones y las guarda acá:
-       nombre-m.jpg  →  1600 px, para la ficha y la galería
-       nombre-s.jpg  →   640 px, para las tarjetas del catálogo
-  4. anota la referencia en la base de datos.
+  1. la endereza si venía rotada (fotos de celular),
+  2. genera dos versiones — 1600 px para la ficha, 640 px para las
+     tarjetas del catálogo,
+  3. las comprime,
+  4. las sube a Cloud Storage.
 
-Por eso las fotos originales de 5 MB del celular terminan pesando
-unos 200 KB, sin que nadie tenga que prepararlas.
+Recién ahí viajan por internet, así que una foto de 6 MB del celular
+sube unos 200 KB. Antes, con el backend PHP, se subía entera y la
+achicaba el servidor.
 
---------------------------------------------------------------------
-
-IMPORTANTE
-
-- No borres archivos de acá a mano: la base seguiría apuntando a fotos
-  que ya no existen y quedarían imágenes rotas en el sitio. Para sacar
-  una foto, usá el botón de eliminar dentro del panel.
-
-- Esta carpeta necesita permisos de escritura (755). Si al subir una
-  foto aparece un error de permisos, se cambia desde el administrador
-  de archivos de Hostinger: clic derecho sobre la carpeta → Permisos.
-
-- El archivo .htaccess que está acá impide que el servidor ejecute
-  cualquier cosa que no sea una imagen. No lo borres.
+La carpeta se conserva vacía solamente porque la versión anterior del
+proyecto (etiqueta v1-php) guardaba las fotos acá. Si no pensás volver
+a esa versión, se puede borrar sin problema.

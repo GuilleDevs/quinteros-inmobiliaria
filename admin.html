@@ -1,20 +1,9 @@
-<?php
-require_once __DIR__ . '/lib/auth.php';
-require_once __DIR__ . '/lib/catalogo.php';
-
-exigir_login();
-
-$propiedades = listar_propiedades();
-$csrf = token_csrf();
-$totalPublicadas = count(array_filter($propiedades, fn($p) => $p['publicada']));
-?>
 <!DOCTYPE html>
 <html lang="es-AR">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
-<meta name="csrf-token" content="<?= e($csrf) ?>">
 <title>Panel de carga de propiedades | Quinteros</title>
 <link rel="icon" href="assets/img/favicon.png" type="image/png">
 <meta name="theme-color" content="#0A2540">
@@ -30,14 +19,19 @@ $totalPublicadas = count(array_filter($propiedades, fn($p) => $p['publicada']));
     <img class="brand__mark" src="assets/img/logo-quinteros-claro.png" width="183" height="200" alt="" aria-hidden="true">
     <h1>Panel de carga de propiedades</h1>
     <span id="estado-cambios" style="font-size:.8rem;color:#9FC0D6"></span>
-    <span style="font-size:.8rem;color:#7897AE" title="Cuenta con la que entraste"><?= e(usuario_admin()) ?></span>
+    <span id="cuenta" style="font-size:.8rem;color:#7897AE" title="Cuenta con la que entraste"></span>
     <a class="btn btn--ghost-light btn--sm" href="index.html" target="_blank" rel="noopener">Ver el sitio</a>
     <button class="btn btn--ghost-light btn--sm" type="button" id="btn-clave">Contraseña</button>
-    <a class="btn btn--ghost-light btn--sm" href="logout.php">Salir</a>
+    <button class="btn btn--ghost-light btn--sm" type="button" id="btn-salir">Salir</button>
   </div>
 </div>
 
-<div class="wrap admin__layout">
+<!-- Pantalla de carga inicial: se muestra mientras se verifica la sesión -->
+<div class="wrap" id="cargando" style="padding-block:5rem;text-align:center">
+  <p class="muted">Cargando el catálogo...</p>
+</div>
+
+<div class="wrap admin__layout hide" id="app">
 
   <!-- ============ COLUMNA IZQUIERDA ============ -->
   <div class="stack" style="--stack:1rem">
@@ -57,7 +51,7 @@ $totalPublicadas = count(array_filter($propiedades, fn($p) => $p['publicada']));
       <ol class="svc__steps" style="font-size:.85rem">
         <li>Cargá o editá la propiedad y subí las fotos.</li>
         <li>Tocá <strong>Guardar cambios</strong>.</li>
-        <li>Listo: el sitio ya muestra la propiedad. No hay que subir ningún archivo.</li>
+        <li>Listo: el sitio ya muestra la propiedad.</li>
       </ol>
     </div>
 
@@ -92,7 +86,7 @@ $totalPublicadas = count(array_filter($propiedades, fn($p) => $p['publicada']));
           </svg>
           <p class="dropzone__titulo">Arrastrá las fotos acá</p>
           <p class="dropzone__sub">o <button type="button" class="dropzone__boton" id="btn-elegir">elegilas desde tu computadora</button></p>
-          <p class="dropzone__hint">JPG, PNG o WEBP. Se achican solas, no hace falta prepararlas. La primera foto es la portada.</p>
+          <p class="dropzone__hint">JPG, PNG o WEBP. Se achican solas antes de subirse, no hace falta prepararlas. La primera foto es la portada.</p>
         </div>
 
         <div class="subiendo hide" id="subiendo">
@@ -247,6 +241,7 @@ $totalPublicadas = count(array_filter($propiedades, fn($p) => $p['publicada']));
     <div class="field mt-2">
       <label class="field__label" for="k-nueva">Contraseña nueva</label>
       <input class="input" id="k-nueva" type="password" autocomplete="new-password">
+      <span class="field__hint">Mínimo 6 caracteres.</span>
     </div>
     <div class="field mt-2">
       <label class="field__label" for="k-nueva2">Repetir la nueva</label>
@@ -262,22 +257,10 @@ $totalPublicadas = count(array_filter($propiedades, fn($p) => $p['publicada']));
 
 <div class="toast" id="toast"></div>
 
-<script>
-  /* JSON_HEX_TAG escapa los signos < y > de los textos: sin eso, una
-     descripcion que contuviera una etiqueta de cierre de script cortaria
-     este bloque y rompería la página. */
-  window.PANEL = {
-    csrf: <?= json_encode($csrf, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>,
-    propiedades: <?= json_encode($propiedades, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>,
-    urlFotos: <?= json_encode(URL_FOTOS, JSON_HEX_TAG) ?>,
-    publicadas: <?= (int) $totalPublicadas ?>
-  };
-</script>
 <script src="assets/js/config.js"></script>
-<!-- El panel lee de la base (window.PANEL), no del catálogo generado:
-     por eso acá NO se carga data/propiedades.js. -->
+<script src="assets/js/firebase-config.js"></script>
 <script src="assets/js/app.js"></script>
 <script src="assets/js/catalogo.js"></script>
-<script src="assets/js/admin-panel.js"></script>
+<script type="module" src="assets/js/admin-panel.js"></script>
 </body>
 </html>
